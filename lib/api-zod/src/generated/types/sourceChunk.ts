@@ -6,6 +6,10 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface HealthStatus {
-  status: string;
+export interface SourceChunk {
+  document_id: string;
+  document_name: string;
+  chunk_text: string;
+  score: number;
+  chunk_index: number;
 }
