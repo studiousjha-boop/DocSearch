@@ -333,23 +333,33 @@ def query_documents(body: QueryInput):
     ]
 
     has_llm = False
-    gemini_key = os.environ.get("GEMINI_API_KEY", "")
+    openai_key = os.environ.get("OPENAI_API_KEY", "")
 
-    if gemini_key and sources:
+    if openai_key and sources:
         try:
-            import google.generativeai as genai
-            genai.configure(api_key=gemini_key)
+            from openai import OpenAI
+            client = OpenAI(api_key=openai_key)
             context = "\n\n---\n\n".join(
                 f"[From: {s.document_name}]\n{s.chunk_text}" for s in sources[:5]
             )
-            prompt = (
-                "You are a helpful assistant. Answer the question using ONLY the provided document excerpts. "
-                "If the answer is not in the excerpts, say so clearly.\n\n"
-                f"Document excerpts:\n{context}\n\n"
-                f"Question: {body.question}\n\nAnswer:"
+            response = client.chat.completions.create(
+                model="gpt-4o-mini",
+                max_tokens=1024,
+                messages=[
+                    {
+                        "role": "system",
+                        "content": (
+                            "You are a helpful assistant. Answer the question using ONLY the provided document excerpts. "
+                            "If the answer is not in the excerpts, say so clearly."
+                        ),
+                    },
+                    {
+                        "role": "user",
+                        "content": f"Document excerpts:\n{context}\n\nQuestion: {body.question}",
+                    },
+                ],
             )
-            response = genai.GenerativeModel("gemini-2.5-flash").generate_content(prompt)
-            answer = response.text.strip()
+            answer = response.choices[0].message.content.strip()
             has_llm = True
         except Exception as e:
             answer = f"LLM error: {e}\n\n" + _format_chunks(sources)
@@ -383,7 +393,7 @@ def get_stats():
         total_documents=len(docs),
         total_chunks=len(_chunk_meta),
         ready_documents=sum(1 for d in docs.values() if d["status"] == "ready"),
-        has_llm=bool(os.environ.get("GEMINI_API_KEY", "")),
+        has_llm=bool(os.environ.get("OPENAI_API_KEY", "")),
         embedding_model="TF-IDF (all-MiniLM-L6-v2 optional)",
         vector_db="In-memory TF-IDF index",
     )
