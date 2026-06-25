@@ -4,4 +4,4 @@ python-multipart
 pypdf
 python-docx
 scikit-learn
-openai
+google-generativeai
