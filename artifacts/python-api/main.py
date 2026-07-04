@@ -354,13 +354,19 @@ def query_documents(body: QueryInput):
             try:
                 response = client.chat.completions.create(
                     model=model,
-                    max_tokens=1024,
+                    max_tokens=2048,
                     messages=[
                         {
                             "role": "system",
                             "content": (
-                                "You are a helpful assistant. Answer the question using ONLY the provided document excerpts. "
-                                "If the answer is not in the excerpts, say so clearly."
+                                "You are a helpful research assistant. Answer the question using ONLY the provided "
+                                "document excerpts, but be thorough and detailed in your response. "
+                                "Write a well-developed answer of several sentences or paragraphs where relevant: "
+                                "explain the reasoning, include specific facts, figures, names, or quotes from the "
+                                "excerpts that support your answer, and cover multiple angles if the excerpts allow it. "
+                                "Do not pad with filler — every sentence should add real information. "
+                                "If the answer is not in the excerpts, say so clearly and explain what related "
+                                "information IS available instead."
                             ),
                         },
                         {

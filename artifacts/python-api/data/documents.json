@@ -1,12 +1,12 @@
 {
-  "44e318bc-ec36-4b2b-a2ea-5dc0de593d68": {
-    "id": "44e318bc-ec36-4b2b-a2ea-5dc0de593d68",
-    "name": "UpdatedResume2.pdf",
+  "a45ad33a-eeeb-4b41-8d10-ab9631044d25": {
+    "id": "a45ad33a-eeeb-4b41-8d10-ab9631044d25",
+    "name": "3-Step Charm Finder.pdf",
     "status": "ready",
-    "chunk_count": 4,
-    "size_bytes": 114721,
+    "chunk_count": 21,
+    "size_bytes": 97242,
     "file_type": "pdf",
-    "created_at": "2026-07-04T05:31:11Z",
+    "created_at": "2026-07-04T11:56:42Z",
     "error_message": null
   }
 }
