@@ -1,3 +1,4 @@
+import { useMemo, useState } from "react";
 import { Layout } from "@/components/layout";
 import { FileUpload } from "@/components/file-upload";
 import { useListDocuments, useDeleteDocument, getListDocumentsQueryKey } from "@workspace/api-client-react";
@@ -6,7 +7,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Trash2, FileText, Loader2, AlertCircle } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Trash2, FileText, Loader2, AlertCircle, ArrowUpDown } from "lucide-react";
 import { format } from "date-fns";
 
 function formatBytes(bytes: number, decimals = 2) {
@@ -20,7 +22,9 @@ function formatBytes(bytes: number, decimals = 2) {
 
 export default function Library() {
   const queryClient = useQueryClient();
-  
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [sortOldestFirst, setSortOldestFirst] = useState(false);
+
   // Enable polling if any doc is processing
   const { data: documents } = useListDocuments({
     query: {
@@ -35,6 +39,14 @@ export default function Library() {
     }
   });
 
+  const sortedDocuments = useMemo(() => {
+    if (!documents) return documents;
+    const sorted = [...documents].sort(
+      (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+    );
+    return sortOldestFirst ? sorted : sorted.reverse();
+  }, [documents, sortOldestFirst]);
+
   const deleteMutation = useDeleteDocument({
     mutation: {
       onSuccess: () => {
@@ -42,6 +54,35 @@ export default function Library() {
       }
     }
   });
+
+  const [isBulkDeleting, setIsBulkDeleting] = useState(false);
+
+  const toggleSelected = (id: string) => {
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
+  };
+
+  const toggleSelectAll = () => {
+    if (!sortedDocuments) return;
+    if (selectedIds.length === sortedDocuments.length) {
+      setSelectedIds([]);
+    } else {
+      setSelectedIds(sortedDocuments.map((d) => d.id));
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    setIsBulkDeleting(true);
+    try {
+      for (const id of selectedIds) {
+        await deleteMutation.mutateAsync({ id });
+      }
+      setSelectedIds([]);
+    } finally {
+      setIsBulkDeleting(false);
+    }
+  };
 
   return (
     <Layout>
@@ -54,8 +95,35 @@ export default function Library() {
         <FileUpload />
 
         <Card className="border shadow-sm">
-          <CardHeader className="bg-secondary/30 border-b">
+          <CardHeader className="bg-secondary/30 border-b flex flex-row items-center justify-between gap-4 flex-wrap">
             <CardTitle className="text-lg">Uploaded Files</CardTitle>
+            {!!documents?.length && (
+              <div className="flex items-center gap-2">
+                {selectedIds.length > 0 && (
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={handleBulkDelete}
+                    disabled={isBulkDeleting}
+                  >
+                    {isBulkDeleting ? (
+                      <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                    ) : (
+                      <Trash2 className="h-4 w-4 mr-1" />
+                    )}
+                    Delete {selectedIds.length} selected
+                  </Button>
+                )}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setSortOldestFirst((v) => !v)}
+                >
+                  <ArrowUpDown className="h-4 w-4 mr-1" />
+                  {sortOldestFirst ? "Oldest first" : "Newest first"}
+                </Button>
+              </div>
+            )}
           </CardHeader>
           <CardContent className="p-0">
             {!documents ? (
@@ -72,6 +140,13 @@ export default function Library() {
               <Table>
                 <TableHeader>
                   <TableRow className="bg-muted/50">
+                    <TableHead className="w-[40px]">
+                      <Checkbox
+                        checked={!!sortedDocuments?.length && selectedIds.length === sortedDocuments.length}
+                        onCheckedChange={toggleSelectAll}
+                        aria-label="Select all"
+                      />
+                    </TableHead>
                     <TableHead>Name</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Size</TableHead>
@@ -81,8 +156,15 @@ export default function Library() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {documents.map((doc) => (
-                    <TableRow key={doc.id} className="group">
+                  {sortedDocuments?.map((doc) => (
+                    <TableRow key={doc.id} className="group" data-state={selectedIds.includes(doc.id) ? "selected" : undefined}>
+                      <TableCell>
+                        <Checkbox
+                          checked={selectedIds.includes(doc.id)}
+                          onCheckedChange={() => toggleSelected(doc.id)}
+                          aria-label={`Select ${doc.name}`}
+                        />
+                      </TableCell>
                       <TableCell className="font-medium">
                         <div className="flex items-center gap-2">
                           <FileText className="h-4 w-4 text-primary" />
