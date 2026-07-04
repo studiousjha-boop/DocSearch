@@ -336,33 +336,47 @@ def query_documents(body: QueryInput):
     openrouter_key = os.environ.get("OPENROUTER_API_KEY", "")
 
     if openrouter_key and sources:
-        try:
-            from openai import OpenAI
-            client = OpenAI(api_key=openrouter_key, base_url="https://openrouter.ai/api/v1")
-            context = "\n\n---\n\n".join(
-                f"[From: {s.document_name}]\n{s.chunk_text}" for s in sources[:5]
-            )
-            response = client.chat.completions.create(
-                model="openai/gpt-oss-120b:free",
-                max_tokens=1024,
-                messages=[
-                    {
-                        "role": "system",
-                        "content": (
-                            "You are a helpful assistant. Answer the question using ONLY the provided document excerpts. "
-                            "If the answer is not in the excerpts, say so clearly."
-                        ),
-                    },
-                    {
-                        "role": "user",
-                        "content": f"Document excerpts:\n{context}\n\nQuestion: {body.question}",
-                    },
-                ],
-            )
-            answer = response.choices[0].message.content.strip()
-            has_llm = True
-        except Exception as e:
-            answer = f"LLM error: {e}\n\n" + _format_chunks(sources)
+        from openai import OpenAI
+        client = OpenAI(api_key=openrouter_key, base_url="https://openrouter.ai/api/v1")
+        context = "\n\n---\n\n".join(
+            f"[From: {s.document_name}]\n{s.chunk_text}" for s in sources[:5]
+        )
+        fallback_models = [
+            "openai/gpt-oss-120b:free",
+            "openai/gpt-oss-20b:free",
+            "meta-llama/llama-3.3-70b-instruct:free",
+            "deepseek/deepseek-chat-v3-0324:free",
+            "qwen/qwen-2.5-72b-instruct:free",
+        ]
+        last_error = None
+        answer = None
+        for model in fallback_models:
+            try:
+                response = client.chat.completions.create(
+                    model=model,
+                    max_tokens=1024,
+                    messages=[
+                        {
+                            "role": "system",
+                            "content": (
+                                "You are a helpful assistant. Answer the question using ONLY the provided document excerpts. "
+                                "If the answer is not in the excerpts, say so clearly."
+                            ),
+                        },
+                        {
+                            "role": "user",
+                            "content": f"Document excerpts:\n{context}\n\nQuestion: {body.question}",
+                        },
+                    ],
+                )
+                answer = response.choices[0].message.content.strip()
+                has_llm = True
+                break
+            except Exception as e:
+                last_error = e
+                continue
+        if answer is None:
+            answer = f"LLM error: {last_error}\n\n" + _format_chunks(sources)
     elif sources:
         answer = _format_chunks(sources)
     else:
