@@ -343,7 +343,7 @@ def query_documents(body: QueryInput):
                 f"[From: {s.document_name}]\n{s.chunk_text}" for s in sources[:5]
             )
             response = client.chat.completions.create(
-                model="meta-llama/llama-3.3-70b-instruct:free",
+                model="openai/gpt-oss-120b:free",
                 max_tokens=1024,
                 messages=[
                     {
