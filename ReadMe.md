@@ -1,6 +1,6 @@
-# [Project name]
+# DocSearch
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+Searches Your Document For Queries on the Doc (To Answer Anything On Student Notes).
 
 ## Run & Operate
 
