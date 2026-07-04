@@ -1,4 +1,6 @@
 import { useState } from "react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { Layout } from "@/components/layout";
 import { FileUpload } from "@/components/file-upload";
 import { useQueryDocuments, useListDocuments } from "@workspace/api-client-react";
@@ -66,8 +68,10 @@ export default function Home() {
                           {queryMutation.data.processing_time_ms}ms
                         </Badge>
                       </h2>
-                      <div className="prose prose-sm md:prose-base prose-slate dark:prose-invert max-w-none bg-secondary/20 p-6 rounded-lg border">
-                        {queryMutation.data.answer}
+                      <div className="prose prose-sm md:prose-base prose-slate dark:prose-invert max-w-none bg-secondary/20 p-6 rounded-lg border prose-p:leading-relaxed prose-p:my-3 prose-ul:my-3 prose-li:my-1 prose-headings:font-serif prose-strong:font-semibold">
+                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                          {queryMutation.data.answer}
+                        </ReactMarkdown>
                       </div>
                     </div>
 
